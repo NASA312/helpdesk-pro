@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.catalog",       
     "apps.assets",  
+    "apps.tickets",
 ]
 
 MIDDLEWARE = [
@@ -88,3 +89,4 @@ LOGOUT_REDIRECT_URL = "login"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="HelpDesk Pro <no-reply@helpdesk.local>")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+MAX_UPLOAD_MB = 10

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Tickets · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <h1 class="text-2xl font-bold">{% if user.is_support_staff %}Tickets{% else %}Mis tickets{% endif %}</h1>
+  <a href="{% url 'ticket_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg">Nuevo ticket</a>
+</div>
+
+<form method="get" class="grid sm:grid-cols-2 lg:grid-cols-6 gap-2 mb-4 text-sm">
+  <input name="q" value="{{ filters.q }}" placeholder="TK-000184, título, persona o equipo"
+         class="border border-slate-300 rounded-lg px-3 py-2 lg:col-span-2">
+  <select name="status" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Todos los estados</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="priority" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Toda prioridad</option>
+    {% for p in priorities %}
+      <option value="{{ p.pk }}" {% if filters.priority == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+    {% endfor %}
+  </select>
+  <select name="category" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Toda categoría</option>
+    {% for c in categories %}
+      <option value="{{ c.pk }}" {% if filters.category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  {% if user.is_support_staff %}
+  <select name="assigned" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Todos los técnicos</option>
+    <option value="me" {% if filters.assigned == "me" %}selected{% endif %}>Asignados a mí</option>
+    <option value="none" {% if filters.assigned == "none" %}selected{% endif %}>Sin asignar</option>
+    {% for s in staff_members %}
+      <option value="{{ s.pk }}" {% if filters.assigned == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.display_name }}</option>
+    {% endfor %}
+  </select>
+  <select name="department" class="border border-slate-300 rounded-lg px-3 py-2 lg:col-span-2">
+    <option value="">Todos los departamentos</option>
+    {% for d in departments %}
+      <option value="{{ d.pk }}" {% if filters.department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+    {% endfor %}
+  </select>
+  {% endif %}
+  <div class="flex gap-2 lg:col-span-2">
+    <button class="bg-slate-800 text-white px-4 py-2 rounded-lg flex-1">Filtrar</button>
+    <a href="{% url 'ticket_list' %}" class="px-4 py-2 border rounded-lg hover:bg-slate-50">Limpiar</a>
+  </div>
+</form>
+
+<div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500">
+      <tr>
+        <th class="px-4 py-3">Ticket</th><th class="px-4 py-3">Solicitante</th><th class="px-4 py-3">Categoría</th>
+        <th class="px-4 py-3">Prioridad</th><th class="px-4 py-3">Estado</th><th class="px-4 py-3">Técnico</th>
+        <th class="px-4 py-3">Creado</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for t in tickets %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3">
+          <a href="{{ t.get_absolute_url }}" class="text-blue-700 font-medium hover:underline">{{ t.code }}</a>
+          <p class="text-slate-700">{{ t.title|truncatechars:60 }}</p>
+        </td>
+        <td class="px-4 py-3">{{ t.requester.display_name }}</td>
+        <td class="px-4 py-3">{{ t.category.name }}</td>
+        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium {{ t.priority.badge_classes }}">{{ t.priority.name }}</span></td>
+        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium {{ t.status_badge }}">{{ t.get_status_display }}</span></td>
+        <td class="px-4 py-3">{{ t.assigned_to.display_name|default:"Sin asignar" }}</td>
+        <td class="px-4 py-3 whitespace-nowrap">{{ t.created_at|date:"d/m/Y H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No hay tickets que coincidan.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<div class="flex justify-between mt-4 text-sm">
+  {% if page_obj.has_previous %}<a class="text-blue-600" href="?page={{ page_obj.previous_page_number }}{{ extra }}">← Anterior</a>{% else %}<span></span>{% endif %}
+  <span class="text-slate-500">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="text-blue-600" href="?page={{ page_obj.next_page_number }}{{ extra }}">Siguiente →</a>{% else %}<span></span>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

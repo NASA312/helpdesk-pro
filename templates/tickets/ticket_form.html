@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Nuevo ticket · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-xl shadow-sm p-8">
+  <h1 class="text-xl font-bold mb-1">Nuevo ticket</h1>
+  <p class="text-sm text-slate-500 mb-6">Describe el problema con el mayor detalle posible: qué ocurre, desde cuándo y qué intentaste.</p>
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+    {% include "includes/form_fields.html" %}
+    <div class="flex gap-3 pt-2">
+      <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg">Crear ticket</button>
+      <a href="{% url 'ticket_list' %}" class="px-5 py-2 rounded-lg border hover:bg-slate-50">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

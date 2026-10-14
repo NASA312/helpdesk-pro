@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from apps.tickets.models import Ticket
 
 from apps.accounts.models import Department
 from apps.core.mixins import AdminRequiredMixin, FormPageMixin, SupportStaffRequiredMixin
@@ -79,8 +80,13 @@ class AssetDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        if self.request.user.is_support_staff:
+        user = self.request.user
+        if user.is_support_staff:
             ctx["history"] = self.object.assignments.select_related("user", "assigned_by")
+        ctx["tickets"] = (
+            Ticket.objects.for_user(user).filter(asset=self.object)
+            .select_related("priority").order_by("-created_at")[:10]
+        )
         return ctx
 
 

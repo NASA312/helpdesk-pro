@@ -70,8 +70,18 @@
     {% endif %}
 
     <div class="bg-white rounded-xl shadow-sm p-6">
-      <h2 class="font-semibold mb-1">Tickets del equipo</h2>
-      <p class="text-sm text-slate-500">Aquí aparecerán los tickets relacionados a este equipo (Fase 3).</p>
+      <h2 class="font-semibold mb-3">Tickets del equipo</h2>
+      <ul class="divide-y text-sm">
+        {% for t in tickets %}
+        <li class="py-2">
+          <a href="{{ t.get_absolute_url }}" class="text-blue-700 font-medium hover:underline">{{ t.code }}</a>
+          <span class="text-slate-600">{{ t.title|truncatechars:40 }}</span>
+          <span class="ml-1 px-2 py-0.5 rounded text-xs font-medium {{ t.status_badge }}">{{ t.get_status_display }}</span>
+        </li>
+        {% empty %}
+        <li class="py-2 text-slate-500">Este equipo no tiene tickets.</li>
+        {% endfor %}
+      </ul>
     </div>
   </div>
 </div>

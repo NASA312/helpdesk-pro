@@ -32,6 +32,14 @@
          class="flex items-center gap-3 rounded-lg px-3 py-2 {% if url_name == 'dashboard' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
         🏠 Panel
       </a>
+    <a href="{% url 'ticket_create' %}"
+         class="flex items-center gap-3 rounded-lg px-3 py-2 {% if url_name == 'ticket_create' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+        ➕ Nuevo ticket
+      </a>
+      <a href="{% url 'ticket_list' %}"
+         class="flex items-center gap-3 rounded-lg px-3 py-2 {% if url_name == 'ticket_list' or url_name == 'ticket_detail' or url_name == 'ticket_edit' or url_name == 'ticket_delete' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+        🎫 {% if user.is_support_staff %}Tickets{% else %}Mis tickets{% endif %}
+      </a>
       <a href="{% url 'my_assets' %}"
          class="flex items-center gap-3 rounded-lg px-3 py-2 {% if url_name == 'my_assets' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
         💻 Mis equipos
