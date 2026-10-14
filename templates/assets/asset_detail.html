@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ asset.code }} · HelpDesk Pro{% endblock %}
+
+{% block content %}
+{% if user.is_support_staff %}
+  <a href="{% url 'asset_list' %}" class="text-sm text-blue-600 hover:underline">← Inventario</a>
+{% else %}
+  <a href="{% url 'my_assets' %}" class="text-sm text-blue-600 hover:underline">← Mis equipos</a>
+{% endif %}
+
+<div class="flex flex-wrap justify-between items-start gap-3 mt-2 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold">{{ asset.code }}</h1>
+    <p class="text-slate-600">{{ asset.brand }} {{ asset.model }} · {{ asset.get_asset_type_display }}</p>
+    <span class="inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium {{ asset.status_badge }}">{{ asset.get_status_display }}</span>
+  </div>
+  {% if user.is_support_staff %}
+  <div class="flex gap-2 text-sm">
+    <a href="{% url 'asset_update' asset.pk %}" class="bg-white border px-4 py-2 rounded-lg hover:bg-slate-50">Editar</a>
+    {% if user.is_helpdesk_admin %}
+      <a href="{% url 'asset_delete' asset.pk %}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Eliminar</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+    <dl class="grid sm:grid-cols-2 gap-4 text-sm">
+      <div><dt class="text-slate-500">Asignado a</dt><dd class="font-medium">{{ asset.assigned_to.display_name|default:"Sin asignar" }}</dd></div>
+      <div><dt class="text-slate-500">Departamento</dt><dd class="font-medium">{{ asset.department.name|default:"—" }}</dd></div>
+      <div><dt class="text-slate-500">Dirección IP</dt><dd class="font-medium">{{ asset.ip_address|default:"—" }}</dd></div>
+      <div><dt class="text-slate-500">Sistema operativo</dt><dd class="font-medium">{{ asset.operating_system|default:"—" }}</dd></div>
+      <div><dt class="text-slate-500">Número de serie</dt><dd class="font-medium">{{ asset.serial_number|default:"—" }}</dd></div>
+      <div><dt class="text-slate-500">Fecha de compra</dt><dd class="font-medium">{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</dd></div>
+      <div>
+        <dt class="text-slate-500">Garantía</dt>
+        <dd class="font-medium">
+          {% if asset.warranty_until %}
+            {{ asset.warranty_until|date:"d/m/Y" }}
+            {% if asset.warranty_state == "expired" %}<span class="ml-1 text-xs text-red-600">Vencida</span>
+            {% elif asset.warranty_state == "expiring" %}<span class="ml-1 text-xs text-yellow-700">Vence pronto</span>
+            {% else %}<span class="ml-1 text-xs text-green-700">Vigente</span>{% endif %}
+          {% else %}—{% endif %}
+        </dd>
+      </div>
+    </dl>
+    {% if asset.notes %}<p class="mt-4 text-sm text-slate-700 whitespace-pre-line">{{ asset.notes }}</p>{% endif %}
+  </div>
+
+  <div class="space-y-6">
+    {% if user.is_support_staff %}
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-semibold mb-3">Historial de asignaciones</h2>
+      <ul class="divide-y text-sm">
+        {% for h in history %}
+        <li class="py-2">
+          <p class="font-medium">{{ h.user.display_name|default:"Usuario eliminado" }}</p>
+          <p class="text-xs text-slate-500">
+            Desde {{ h.assigned_at|date:"d/m/Y" }} ·
+            {% if h.returned_at %}hasta {{ h.returned_at|date:"d/m/Y" }}{% else %}<span class="text-green-700">vigente</span>{% endif %}
+          </p>
+          {% if h.assigned_by %}<p class="text-xs text-slate-400">Asignado por {{ h.assigned_by.display_name }}</p>{% endif %}
+        </li>
+        {% empty %}
+        <li class="py-2 text-slate-500">Este equipo nunca ha sido asignado.</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-semibold mb-1">Tickets del equipo</h2>
+      <p class="text-sm text-slate-500">Aquí aparecerán los tickets relacionados a este equipo (Fase 3).</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,6 +1,7 @@
 import pytest
 
 from apps.accounts.models import Department, User
+from apps.assets.models import Asset
 
 PASSWORD = "Pass12345!"
 
@@ -31,3 +32,9 @@ def tecnico(db):
 @pytest.fixture
 def usuario(db):
     return make_user("usuario", User.Role.USER)
+
+@pytest.fixture
+def equipo(db, depto):
+    return Asset.objects.create(
+        code="PC-RH-023", asset_type=Asset.Type.COMPUTER, brand="Dell", model="OptiPlex 7090", department=depto,
+    )

@@ -27,11 +27,23 @@
     </div>
 
     {% with url_name=request.resolver_match.url_name %}
-    <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
+    <nav class="flex-1 px-3 py-4 space-y-1 text-sm overflow-y-auto">
       <a href="{% url 'dashboard' %}"
          class="flex items-center gap-3 rounded-lg px-3 py-2 {% if url_name == 'dashboard' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
         🏠 Panel
       </a>
+      <a href="{% url 'my_assets' %}"
+         class="flex items-center gap-3 rounded-lg px-3 py-2 {% if url_name == 'my_assets' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+        💻 Mis equipos
+      </a>
+
+      {% if user.is_support_staff %}
+        <p class="px-3 pt-5 pb-1 text-xs uppercase tracking-wide text-slate-500">Operación</p>
+        <a href="{% url 'asset_list' %}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 {% if 'asset_' in url_name %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+          🖥️ Inventario
+        </a>
+      {% endif %}
 
       {% if user.is_helpdesk_admin %}
         <p class="px-3 pt-5 pb-1 text-xs uppercase tracking-wide text-slate-500">Administración</p>
@@ -42,6 +54,14 @@
         <a href="{% url 'department_list' %}"
            class="flex items-center gap-3 rounded-lg px-3 py-2 {% if 'department_' in url_name %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
           🏢 Departamentos
+        </a>
+        <a href="{% url 'category_list' %}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 {% if 'category_' in url_name %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+          🏷️ Categorías
+        </a>
+        <a href="{% url 'priority_list' %}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 {% if 'priority_' in url_name %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+          ⏱️ Prioridades y SLA
         </a>
       {% endif %}
 

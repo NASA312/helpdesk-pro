@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Mis equipos · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Mis equipos</h1>
+
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for a in assets %}
+  <a href="{{ a.get_absolute_url }}" class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">
+    <div class="flex justify-between items-start">
+      <p class="font-bold">{{ a.code }}</p>
+      <span class="px-2 py-0.5 rounded text-xs font-medium {{ a.status_badge }}">{{ a.get_status_display }}</span>
+    </div>
+    <p class="text-sm text-slate-600 mt-1">{{ a.brand }} {{ a.model }}</p>
+    <p class="text-xs text-slate-500 mt-3">{{ a.get_asset_type_display }}{% if a.ip_address %} · {{ a.ip_address }}{% endif %}</p>
+  </a>
+  {% empty %}
+  <div class="sm:col-span-2 lg:col-span-3 bg-white rounded-xl shadow-sm p-8 text-center text-slate-500">
+    No tienes equipos asignados.
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

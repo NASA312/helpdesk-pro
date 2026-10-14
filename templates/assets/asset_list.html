@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Equipos · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <h1 class="text-2xl font-bold">Inventario de equipos</h1>
+  <a href="{% url 'asset_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg">Nuevo equipo</a>
+</div>
+
+<form method="get" class="grid sm:grid-cols-2 lg:grid-cols-6 gap-2 mb-4 text-sm">
+  <input name="q" value="{{ filters.q }}" placeholder="Código, marca, serie, IP o persona"
+         class="border border-slate-300 rounded-lg px-3 py-2 lg:col-span-2">
+  <select name="type" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Todos los tipos</option>
+    {% for value, label in types %}
+      <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Todos los estados</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="department" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Todos los departamentos</option>
+    {% for d in departments %}
+      <option value="{{ d.pk }}" {% if filters.department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+    {% endfor %}
+  </select>
+  <div class="flex gap-2">
+    <select name="assigned" class="border border-slate-300 rounded-lg px-3 py-2 flex-1">
+      <option value="">Asignación</option>
+      <option value="yes" {% if filters.assigned == "yes" %}selected{% endif %}>Asignados</option>
+      <option value="none" {% if filters.assigned == "none" %}selected{% endif %}>Sin asignar</option>
+    </select>
+    <button class="bg-slate-800 text-white px-4 rounded-lg">Filtrar</button>
+  </div>
+</form>
+
+<div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500">
+      <tr>
+        <th class="px-4 py-3">Código</th><th class="px-4 py-3">Equipo</th><th class="px-4 py-3">Asignado a</th>
+        <th class="px-4 py-3">Departamento</th><th class="px-4 py-3">IP</th><th class="px-4 py-3">Estado</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for a in assets %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3"><a href="{{ a.get_absolute_url }}" class="text-blue-700 font-medium hover:underline">{{ a.code }}</a></td>
+        <td class="px-4 py-3">
+          <p>{{ a.brand }} {{ a.model }}</p>
+          <p class="text-xs text-slate-500">{{ a.get_asset_type_display }}</p>
+        </td>
+        <td class="px-4 py-3">{{ a.assigned_to.display_name|default:"—" }}</td>
+        <td class="px-4 py-3">{{ a.department.name|default:"—" }}</td>
+        <td class="px-4 py-3">{{ a.ip_address|default:"—" }}</td>
+        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium {{ a.status_badge }}">{{ a.get_status_display }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No hay equipos que coincidan.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<div class="flex justify-between mt-4 text-sm">
+  {% if page_obj.has_previous %}<a class="text-blue-600" href="?page={{ page_obj.previous_page_number }}{{ extra }}">← Anterior</a>{% else %}<span></span>{% endif %}
+  <span class="text-slate-500">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="text-blue-600" href="?page={{ page_obj.next_page_number }}{{ extra }}">Siguiente →</a>{% else %}<span></span>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

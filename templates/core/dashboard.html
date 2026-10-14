@@ -23,6 +23,27 @@
   </div>
 </div>
 {% endif %}
+{% if user.is_support_staff %}
+<div class="grid sm:grid-cols-3 gap-4 mt-4">
+  <a href="{% url 'asset_list' %}" class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">
+    <p class="text-sm text-slate-500">Equipos en uso</p>
+    <p class="text-3xl font-bold">{{ assets_total }}</p>
+  </a>
+  <a href="{% url 'asset_list' %}?status=repair" class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">
+    <p class="text-sm text-slate-500">En reparación</p>
+    <p class="text-3xl font-bold">{{ assets_repair }}</p>
+  </a>
+  <a href="{% url 'asset_list' %}?assigned=none" class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">
+    <p class="text-sm text-slate-500">Sin asignar</p>
+    <p class="text-3xl font-bold">{{ assets_unassigned }}</p>
+  </a>
+</div>
+{% else %}
+<a href="{% url 'my_assets' %}" class="block bg-white rounded-xl shadow-sm p-5 mt-4 max-w-xs hover:shadow-md transition">
+  <p class="text-sm text-slate-500">Mis equipos</p>
+  <p class="text-3xl font-bold">{{ my_assets_count }}</p>
+</a>
+{% endif %}
 
 <div class="bg-white rounded-xl shadow-sm p-6 mt-6">
   <h2 class="font-semibold mb-1">La base está lista</h2>

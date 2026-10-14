@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     # propias
     "apps.core",
     "apps.accounts",
+    "apps.catalog",       
+    "apps.assets",  
 ]
 
 MIDDLEWARE = [
