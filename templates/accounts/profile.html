@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Mi perfil · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+  <div class="bg-white rounded-xl shadow-sm p-8">
+    <h1 class="text-xl font-bold mb-1">Mi perfil</h1>
+    <p class="text-sm text-slate-500 mb-6">
+      {{ user.get_role_display }}{% if user.department %} · {{ user.department }}{% endif %} · @{{ user.username }}
+    </p>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% include "includes/form_fields.html" %}
+      <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg">Guardar cambios</button>
+    </form>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between">
+    <div>
+      <p class="font-semibold">Contraseña</p>
+      <p class="text-sm text-slate-500">Cámbiala periódicamente.</p>
+    </div>
+    <a href="{% url 'password_change' %}" class="border px-4 py-2 rounded-lg text-sm hover:bg-slate-50">Cambiar contraseña</a>
+  </div>
+</div>
+{% endblock %}

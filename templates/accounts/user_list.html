@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Usuarios · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <h1 class="text-2xl font-bold">Usuarios</h1>
+  <a href="{% url 'user_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg">Nuevo usuario</a>
+</div>
+
+<form method="get" class="grid sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-4 text-sm">
+  <input name="q" value="{{ filters.q }}" placeholder="Buscar nombre, usuario o correo"
+         class="border border-slate-300 rounded-lg px-3 py-2 lg:col-span-2">
+  <select name="role" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Todos los roles</option>
+    {% for value, label in roles %}
+      <option value="{{ value }}" {% if filters.role == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="department" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Todos los departamentos</option>
+    {% for d in departments %}
+      <option value="{{ d.pk }}" {% if filters.department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+    {% endfor %}
+  </select>
+  <div class="flex gap-2">
+    <select name="status" class="border border-slate-300 rounded-lg px-3 py-2 flex-1">
+      <option value="">Todos</option>
+      <option value="active" {% if filters.status == "active" %}selected{% endif %}>Activos</option>
+      <option value="inactive" {% if filters.status == "inactive" %}selected{% endif %}>Inactivos</option>
+    </select>
+    <button class="bg-slate-800 text-white px-4 rounded-lg">Filtrar</button>
+  </div>
+</form>
+
+<div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500">
+      <tr>
+        <th class="px-4 py-3">Nombre</th><th class="px-4 py-3">Correo</th><th class="px-4 py-3">Rol</th>
+        <th class="px-4 py-3">Departamento</th><th class="px-4 py-3">Estado</th><th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for p in people %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3">
+          <p class="font-medium">{{ p.display_name }}</p>
+          <p class="text-xs text-slate-500">@{{ p.username }}</p>
+        </td>
+        <td class="px-4 py-3">{{ p.email }}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-0.5 rounded text-xs font-medium
+            {% if p.role == 'admin' %}bg-purple-100 text-purple-800{% elif p.role == 'tech' %}bg-blue-100 text-blue-800{% else %}bg-slate-100 text-slate-700{% endif %}">
+            {{ p.get_role_display }}</span>
+        </td>
+        <td class="px-4 py-3">{{ p.department.name|default:"—" }}</td>
+        <td class="px-4 py-3">
+          {% if p.is_active %}<span class="text-green-700">Activo</span>{% else %}<span class="text-red-600">Inactivo</span>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-right"><a href="{% url 'user_update' p.pk %}" class="text-blue-600 hover:underline">Editar</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No hay usuarios que coincidan.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<div class="flex justify-between mt-4 text-sm">
+  {% if page_obj.has_previous %}<a class="text-blue-600" href="?page={{ page_obj.previous_page_number }}{{ extra }}">← Anterior</a>{% else %}<span></span>{% endif %}
+  <span class="text-slate-500">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="text-blue-600" href="?page={{ page_obj.next_page_number }}{{ extra }}">Siguiente →</a>{% else %}<span></span>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

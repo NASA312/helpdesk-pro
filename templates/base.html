@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}HelpDesk Pro{% endblock %}</title>
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <!-- Solo para desarrollo. En producción compilaremos Tailwind y serviremos las librerías localmente. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen"
+      x-data="{ sidebar: false }"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+<div class="min-h-screen lg:flex">
+
+  {% if user.is_authenticated %}
+  <div x-show="sidebar" x-cloak @click="sidebar = false" class="fixed inset-0 z-30 bg-black/40 lg:hidden"></div>
+
+  <aside class="fixed inset-y-0 left-0 z-40 w-64 flex flex-col bg-slate-900 text-slate-200 transition-transform lg:static lg:translate-x-0 lg:shrink-0"
+         :class="sidebar ? 'translate-x-0' : '-translate-x-full'">
+    <div class="h-16 flex items-center px-5 border-b border-slate-800">
+      <a href="{% url 'dashboard' %}" class="text-lg font-bold text-white">🛠️ HelpDesk Pro</a>
+    </div>
+
+    {% with url_name=request.resolver_match.url_name %}
+    <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
+      <a href="{% url 'dashboard' %}"
+         class="flex items-center gap-3 rounded-lg px-3 py-2 {% if url_name == 'dashboard' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+        🏠 Panel
+      </a>
+
+      {% if user.is_helpdesk_admin %}
+        <p class="px-3 pt-5 pb-1 text-xs uppercase tracking-wide text-slate-500">Administración</p>
+        <a href="{% url 'user_list' %}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 {% if 'user_' in url_name %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+          👥 Usuarios
+        </a>
+        <a href="{% url 'department_list' %}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 {% if 'department_' in url_name %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+          🏢 Departamentos
+        </a>
+      {% endif %}
+
+      <p class="px-3 pt-5 pb-1 text-xs uppercase tracking-wide text-slate-500">Mi cuenta</p>
+      <a href="{% url 'profile' %}"
+         class="flex items-center gap-3 rounded-lg px-3 py-2 {% if url_name == 'profile' or url_name == 'password_change' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+        👤 Mi perfil
+      </a>
+    </nav>
+    {% endwith %}
+  </aside>
+  {% endif %}
+
+  <div class="flex-1 min-w-0 flex flex-col">
+    {% if user.is_authenticated %}
+    <header class="h-16 bg-white border-b flex items-center justify-between px-4 sm:px-6">
+      <button type="button" @click="sidebar = true" class="lg:hidden p-2 -ml-2 text-slate-600" aria-label="Abrir menú">☰</button>
+      <span class="hidden lg:block"></span>
+      <div class="flex items-center gap-3 text-sm">
+        <div class="text-right leading-tight">
+          <p class="font-medium">{{ user.display_name }}</p>
+          <p class="text-xs text-slate-500">{{ user.get_role_display }}</p>
+        </div>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg">Salir</button>
+        </form>
+      </div>
+    </header>
+    {% endif %}
+
+    <main class="flex-1 p-4 sm:p-6">
+      {% if messages %}
+        <div class="mb-4 space-y-2">
+          {% for message in messages %}
+            <div class="rounded-lg px-4 py-2.5 text-sm
+              {% if message.tags == 'error' %}bg-red-100 text-red-800
+              {% elif message.tags == 'success' %}bg-green-100 text-green-800
+              {% else %}bg-blue-100 text-blue-900{% endif %}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

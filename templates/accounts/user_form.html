@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{% if target_user %}Editar{% else %}Nuevo{% endif %} usuario · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-xl shadow-sm p-8">
+  <h1 class="text-xl font-bold mb-6">
+    {% if target_user %}Editar a {{ target_user.display_name }}{% else %}Nuevo usuario{% endif %}
+  </h1>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% include "includes/form_fields.html" %}
+    <div class="flex gap-3 pt-2">
+      <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg">Guardar</button>
+      <a href="{% url 'user_list' %}" class="px-5 py-2 rounded-lg border hover:bg-slate-50">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

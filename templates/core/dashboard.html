@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Panel · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold">Hola, {{ user.first_name|default:user.username }}</h1>
+<p class="text-sm text-slate-500 mb-6">
+  {{ user.get_role_display }}{% if user.department %} · {{ user.department }}{% endif %}
+</p>
+
+{% if user.is_helpdesk_admin %}
+<div class="grid sm:grid-cols-3 gap-4">
+  <div class="bg-white rounded-xl shadow-sm p-5">
+    <p class="text-sm text-slate-500">Usuarios activos</p>
+    <p class="text-3xl font-bold">{{ active_users }}</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-5">
+    <p class="text-sm text-slate-500">Técnicos</p>
+    <p class="text-3xl font-bold">{{ technicians }}</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-5">
+    <p class="text-sm text-slate-500">Departamentos</p>
+    <p class="text-3xl font-bold">{{ departments }}</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="bg-white rounded-xl shadow-sm p-6 mt-6">
+  <h2 class="font-semibold mb-1">La base está lista</h2>
+  <p class="text-sm text-slate-600">
+    Aquí aparecerán tus tickets, el estado del SLA y las estadísticas a medida que avancemos con las siguientes fases.
+  </p>
+</div>
+{% endblock %}

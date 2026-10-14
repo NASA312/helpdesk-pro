@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}No encontrado · HelpDesk Pro{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto mt-16 bg-white rounded-xl shadow-sm p-8 text-center">
+  <h1 class="text-2xl font-bold mb-2">Página no encontrada</h1>
+  <p class="text-slate-600 mb-6">La página no existe o no tienes acceso a ella.</p>
+  <a href="{% url 'dashboard' %}" class="text-blue-600 hover:underline">Volver al inicio</a>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Departamentos · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+  <h1 class="text-2xl font-bold">Departamentos</h1>
+  <a href="{% url 'department_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg">Nuevo departamento</a>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500">
+      <tr><th class="px-4 py-3">Nombre</th><th class="px-4 py-3">Personas</th><th class="px-4 py-3">Estado</th><th class="px-4 py-3"></th></tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for d in departments %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3">
+          <p class="font-medium">{{ d.name }}</p>
+          {% if d.description %}<p class="text-xs text-slate-500">{{ d.description|truncatechars:80 }}</p>{% endif %}
+        </td>
+        <td class="px-4 py-3">{{ d.user_count }}</td>
+        <td class="px-4 py-3">
+          {% if d.is_active %}<span class="text-green-700">Activo</span>{% else %}<span class="text-slate-500">Inactivo</span>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-right space-x-3">
+          <a href="{% url 'department_update' d.pk %}" class="text-blue-600 hover:underline">Editar</a>
+          <a href="{% url 'department_delete' d.pk %}" class="text-red-600 hover:underline">Eliminar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">Aún no hay departamentos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
