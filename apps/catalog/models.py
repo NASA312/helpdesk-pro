@@ -38,6 +38,10 @@ class Priority(models.Model):
         "blue": "bg-blue-100 text-blue-800",
         "slate": "bg-slate-200 text-slate-700",
     }
+    BORDERS = {
+        "red": "border-red-500", "orange": "border-orange-400", "yellow": "border-yellow-400",
+        "green": "border-green-500", "blue": "border-blue-500", "slate": "border-slate-400",
+    }
 
     name = models.CharField("Nombre", max_length=50, unique=True)
     level = models.PositiveSmallIntegerField(
@@ -75,6 +79,10 @@ class Priority(models.Model):
     @property
     def badge_classes(self):
         return self.BADGES.get(self.color, self.BADGES["slate"])
+    
+    @property
+    def border_classes(self):
+        return self.BORDERS.get(self.color, self.BORDERS["slate"])
 
     @property
     def response_display(self):

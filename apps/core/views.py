@@ -36,6 +36,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             ctx["assets_unassigned"] = in_use.filter(assigned_to__isnull=True).count()
             ctx["tickets_unassigned"] = tickets.filter(status=S.NEW, assigned_to__isnull=True).count()
             ctx["tickets_mine"] = tickets.active().filter(assigned_to=user).count()
+            ctx["tickets_breached"] = tickets.sla_breached().count()
         else:
             ctx["my_assets_count"] = assets.filter(assigned_to=user).count()
             ctx["tickets_waiting"] = tickets.filter(status=S.WAITING_USER).count()

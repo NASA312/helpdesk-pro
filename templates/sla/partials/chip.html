@@ -1,0 +1,6 @@
+{% with h=sla.headline %}
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium {{ h.badge }}" title="{{ h.kind }}: {{ h.detail }}">
+  {% if h.state == "paused" %}⏸{% elif h.state == "breached" or h.state == "missed" %}⚠{% elif h.state == "met" %}✓{% endif %}
+  {{ h.label }}{% if h.short %} · {{ h.short }}{% endif %}
+</span>
+{% endwith %}

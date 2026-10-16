@@ -2,9 +2,12 @@
 {% block title %}Prioridades y SLA · HelpDesk Pro{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-2">
+<div class="flex flex-wrap justify-between items-center gap-2 mb-2">
   <h1 class="text-2xl font-bold">Prioridades y SLA</h1>
-  <a href="{% url 'priority_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg">Nueva prioridad</a>
+  <div class="flex gap-2 text-sm">
+    <a href="{% url 'sla_schedule' %}" class="bg-white border px-4 py-2 rounded-lg hover:bg-slate-50">🕒 Horario laboral</a>
+    <a href="{% url 'priority_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Nueva prioridad</a>
+  </div>
 </div>
 <p class="text-sm text-slate-500 mb-4">
   Cada prioridad define en cuánto tiempo debe responderse y resolverse un ticket. Las prioridades no se eliminan: se desactivan.

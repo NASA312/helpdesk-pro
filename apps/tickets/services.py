@@ -1,6 +1,8 @@
 from django.db import transaction
 from django.utils import timezone
 
+from apps.sla import services as sla
+
 from .models import Ticket, TicketAttachment, TicketComment, TicketCounter, TicketEvent
 
 S = Ticket.Status
@@ -13,6 +15,10 @@ class TicketError(Exception):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
+
+
+class NoteRequired(TicketError):
+    """Falta la solución o el motivo. El tablero responde pidiéndolo en vez de fallar."""
 
 
 def log(ticket, actor, kind, message, internal=False):
@@ -59,6 +65,9 @@ def create_ticket(*, creator, requester, title, description, category, priority,
         category=category, priority=priority, asset=asset,
         requester=requester, department=requester.department,
     )
+    sla.apply_deadlines(ticket)
+    ticket.save(update_fields=["response_due_at", "resolution_due_at"])
+
     if creator.pk == requester.pk:
         log(ticket, creator, Kind.CREATED, "creó el ticket")
     else:
@@ -111,9 +120,9 @@ def change_status(ticket, actor, new_status, note=""):
     old = ticket.status
     reopening = old in (S.RESOLVED, S.CLOSED) and new_status in (S.IN_PROGRESS, S.NEW)
     if new_status == S.RESOLVED and not note:
-        raise TicketError("Describe la solución aplicada.")
+        raise NoteRequired("Describe la solución aplicada.")
     if reopening and not note:
-        raise TicketError("Explica por qué se reabre el ticket.")
+        raise NoteRequired("Explica por qué se reabre el ticket.")
 
     old_label = ticket.get_status_display()
     now = timezone.now()
@@ -126,6 +135,13 @@ def change_status(ticket, actor, new_status, note=""):
     elif reopening:
         ticket.resolved_at = None
         ticket.closed_at = None
+
+    # El reloj del SLA se detiene mientras se espera al usuario
+    if new_status == S.WAITING_USER:
+        sla.pause(ticket, now)
+    elif old == S.WAITING_USER:
+        sla.resume(ticket, now)
+
     _mark_first_response(ticket, actor)
     ticket.save()
 
@@ -159,6 +175,7 @@ def add_comment(ticket, actor, body, *, internal=False, file=None):
         _mark_first_response(ticket, actor)
         if ticket.status == S.WAITING_USER and ticket.requester_id == actor.pk:
             ticket.status = S.IN_PROGRESS
+            sla.resume(ticket, timezone.now())
             log(ticket, actor, Kind.STATUS, "respondió y el ticket volvió a «En proceso»")
     ticket.save()
     return comment
@@ -173,8 +190,13 @@ def update_details(ticket, actor, *, category, priority, asset):
 
     changes = 0
     if ticket.priority_id != priority.pk:
-        log(ticket, actor, Kind.UPDATED, f"cambió la prioridad de «{ticket.priority.name}» a «{priority.name}»")
+        recalculated = ticket.resolved_at is None
+        suffix = " (plazos del SLA recalculados)" if recalculated else ""
+        log(ticket, actor, Kind.UPDATED,
+            f"cambió la prioridad de «{ticket.priority.name}» a «{priority.name}»{suffix}")
         ticket.priority = priority
+        if recalculated:
+            sla.apply_deadlines(ticket)
         changes += 1
     if ticket.category_id != category.pk:
         log(ticket, actor, Kind.UPDATED, f"cambió la categoría de «{ticket.category.name}» a «{category.name}»")
@@ -188,3 +210,16 @@ def update_details(ticket, actor, *, category, priority, asset):
     if changes:
         ticket.save()
     return changes
+
+
+def board_move(ticket, actor, target, note=""):
+    """Movimiento desde el tablero Kanban. Reutiliza las reglas de negocio de siempre."""
+    if target not in Ticket.Status.values:
+        raise TicketError("Estado no válido.")
+    if target == ticket.status:
+        return ticket
+    if ticket.status == S.NEW:
+        if target == S.ASSIGNED:
+            return take(ticket, actor)                       # arrastrar a "Asignado" = tomar el ticket
+        raise TicketError("Toma el ticket primero: arrástralo a la columna «Asignado».")
+    return change_status(ticket, actor, target, note)

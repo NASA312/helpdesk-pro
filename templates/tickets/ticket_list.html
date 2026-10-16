@@ -43,6 +43,10 @@
       <option value="{{ d.pk }}" {% if filters.department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
     {% endfor %}
   </select>
+  <select name="sla" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Cualquier SLA</option>
+    <option value="breached" {% if filters.sla == "breached" %}selected{% endif %}>SLA incumplido (en curso)</option>
+  </select>
   {% endif %}
   <div class="flex gap-2 lg:col-span-2">
     <button class="bg-slate-800 text-white px-4 py-2 rounded-lg flex-1">Filtrar</button>
@@ -55,7 +59,7 @@
     <thead class="bg-slate-50 text-left text-slate-500">
       <tr>
         <th class="px-4 py-3">Ticket</th><th class="px-4 py-3">Solicitante</th><th class="px-4 py-3">Categoría</th>
-        <th class="px-4 py-3">Prioridad</th><th class="px-4 py-3">Estado</th><th class="px-4 py-3">Técnico</th>
+        <th class="px-4 py-3">Prioridad</th><th class="px-4 py-3">Estado</th><th class="px-4 py-3">Técnico</th>        {% if user.is_support_staff %}<th class="px-4 py-3">SLA</th>{% endif %}
         <th class="px-4 py-3">Creado</th>
       </tr>
     </thead>
@@ -71,10 +75,11 @@
         <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium {{ t.priority.badge_classes }}">{{ t.priority.name }}</span></td>
         <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium {{ t.status_badge }}">{{ t.get_status_display }}</span></td>
         <td class="px-4 py-3">{{ t.assigned_to.display_name|default:"Sin asignar" }}</td>
+        {% if user.is_support_staff %}<td class="px-4 py-3">{% include "sla/partials/chip.html" with sla=t.sla %}</td>{% endif %}
         <td class="px-4 py-3 whitespace-nowrap">{{ t.created_at|date:"d/m/Y H:i" }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No hay tickets que coincidan.</td></tr>
+      <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">No hay tickets que coincidan.</td></tr>
       {% endfor %}
     </tbody>
   </table>

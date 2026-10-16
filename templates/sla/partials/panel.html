@@ -1,0 +1,28 @@
+<h2 class="font-semibold mb-3">SLA</h2>
+{% if user.is_support_staff %}
+  {% if sla.cancelled %}
+    <p class="text-sm text-slate-500">El ticket se canceló antes de ser atendido: el SLA no aplica.</p>
+  {% else %}
+    <div class="space-y-4">
+      {% for m in sla.metrics %}
+      <div>
+        <div class="flex justify-between items-center text-sm mb-1">
+          <span class="font-medium">{{ m.kind }}</span>
+          <span class="px-2 py-0.5 rounded text-xs font-medium {{ m.badge }}">{{ m.label }}</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2">
+          <div class="h-2 rounded-full {{ m.bar }}" style="width: {{ m.pct }}%"></div>
+        </div>
+        <p class="text-xs text-slate-600 mt-1">{{ m.detail }}</p>
+        {% if m.due_at %}<p class="text-xs text-slate-400">Límite: {{ m.due_at|date:"d/m/Y H:i" }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% elif ticket.is_open and ticket.resolution_due_at and not sla.cancelled %}
+  <p class="text-sm text-slate-500">Resolución estimada</p>
+  <p class="font-medium">{{ ticket.resolution_due_at|date:"d/m/Y H:i" }}</p>
+  {% if ticket.sla_paused_at %}
+    <p class="text-xs text-purple-700 mt-2">Estamos esperando tu respuesta para continuar.</p>
+  {% endif %}
+{% endif %}

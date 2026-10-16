@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Tablero · HelpDesk Pro{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <h1 class="text-2xl font-bold">Tablero de tickets</h1>
+  <a href="{% url 'ticket_list' %}" class="bg-white border text-sm px-4 py-2 rounded-lg hover:bg-slate-50">Ver como lista</a>
+</div>
+
+<form method="get" class="grid sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-4 text-sm">
+  <input name="q" value="{{ filters.q }}" placeholder="TK-000184, título, persona o equipo"
+         class="border border-slate-300 rounded-lg px-3 py-2 lg:col-span-2">
+  <select name="assigned" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Todos los técnicos</option>
+    <option value="me" {% if filters.assigned == "me" %}selected{% endif %}>Asignados a mí</option>
+    <option value="none" {% if filters.assigned == "none" %}selected{% endif %}>Sin asignar</option>
+    {% for s in staff_members %}
+      <option value="{{ s.pk }}" {% if filters.assigned == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.display_name }}</option>
+    {% endfor %}
+  </select>
+  <select name="priority" class="border border-slate-300 rounded-lg px-3 py-2">
+    <option value="">Toda prioridad</option>
+    {% for p in priorities %}
+      <option value="{{ p.pk }}" {% if filters.priority == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+    {% endfor %}
+  </select>
+  <div class="flex gap-2">
+    <button class="bg-slate-800 text-white px-4 py-2 rounded-lg flex-1">Filtrar</button>
+    {% if has_filters %}<a href="{% url 'ticket_board' %}" class="px-3 py-2 border rounded-lg hover:bg-slate-50">Limpiar</a>{% endif %}
+  </div>
+</form>
+
+<div class="overflow-x-auto pb-4">
+  <div class="flex gap-4 items-start min-w-max">
+    {% for value, label, column_tickets in columns %}
+    <section class="w-72 shrink-0 bg-slate-200/70 rounded-xl p-3">
+      <h2 class="font-semibold text-sm mb-3 flex justify-between items-center">
+        <span>{{ label }}</span>
+        <span id="count-{{ value }}" class="bg-white rounded-full px-2 text-xs">{{ column_tickets|length }}</span>
+      </h2>
+      <div class="kanban-col space-y-2 min-h-[8rem]" data-status="{{ value }}">
+        {% for t in column_tickets %}{% include "tickets/partials/board_card.html" %}{% endfor %}
+      </div>
+      {% if value == "closed" %}<p class="text-[11px] text-slate-500 mt-2">Últimos {{ closed_days }} días.</p>{% endif %}
+    </section>
+    {% endfor %}
+  </div>
+</div>
+
+<p class="text-xs text-slate-500">
+  Arrastra una tarjeta a otra columna para cambiar su estado. De <strong>Nuevo</strong> a <strong>Asignado</strong> tomas el ticket.
+  Las tarjetas sin mano no las puedes mover (no están asignadas a ti).
+</p>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+  const csrfToken = "{{ csrf_token }}";
+
+  function recount() {
+    document.querySelectorAll(".kanban-col").forEach((col) => {
+      document.getElementById("count-" + col.dataset.status).textContent =
+        col.querySelectorAll(".kanban-card").length;
+    });
+  }
+
+  async function sendMove(url, status, note) {
+    const body = new URLSearchParams({ status });
+    if (note) body.append("note", note);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+    let data = {};
+    try { data = await response.json(); } catch (e) { /* respuesta sin JSON */ }
+    return { status: response.status, data };
+  }
+
+  document.querySelectorAll(".kanban-col").forEach((col) => {
+    new Sortable(col, {
+      group: "tickets",
+      sort: false,                  // el orden lo define la prioridad, no el arrastre
+      animation: 150,
+      draggable: ".kanban-card",
+      filter: ".no-drag",
+      preventOnFilter: false,       // el enlace del ticket sigue funcionando
+      ghostClass: "opacity-40",
+      async onEnd(evt) {
+        if (evt.from === evt.to) return;
+        const card = evt.item;
+        const status = evt.to.dataset.status;
+        try {
+          let res = await sendMove(card.dataset.moveUrl, status);
+          if (res.status === 422 && res.data.needs_note) {          // resolver o reabrir piden texto
+            const note = window.prompt(res.data.message);
+            if (!note || !note.trim()) { location.reload(); return; }
+            res = await sendMove(card.dataset.moveUrl, status, note.trim());
+          }
+          if (res.data.ok) {
+            card.outerHTML = res.data.html;
+            recount();
+          } else {
+            alert(res.data.error || res.data.message || "No se pudo mover el ticket.");
+            location.reload();
+          }
+        } catch (e) {
+          location.reload();
+        }
+      },
+    });
+  });
+</script>
+{% endblock %}

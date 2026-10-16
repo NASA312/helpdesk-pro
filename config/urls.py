@@ -20,5 +20,6 @@ urlpatterns = [
     path("", include("apps.catalog.urls")),
     path("", include("apps.assets.urls")),
     path("", include("apps.tickets.urls")),
+    path("", include("apps.sla.urls")),
     path("", include("apps.core.urls")),
 ]

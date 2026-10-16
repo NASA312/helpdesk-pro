@@ -12,5 +12,9 @@ urlpatterns = [
     path("tickets/<int:pk>/asignar/", views.TicketAssignView.as_view(), name="ticket_assign"),
     path("tickets/<int:pk>/estado/", views.TicketStatusView.as_view(), name="ticket_status"),
     path("tickets/<int:pk>/comentar/", views.TicketCommentView.as_view(), name="ticket_comment"),
+    path("tickets/<int:pk>/sla/", views.TicketSLAView.as_view(), name="ticket_sla"),
     path("tickets/<int:pk>/adjuntos/<int:attachment_pk>/", views.TicketAttachmentView.as_view(), name="ticket_attachment"),
+
+    path("tablero/", views.TicketBoardView.as_view(), name="ticket_board"),
+    path("tablero/mover/<int:pk>/", views.TicketBoardMoveView.as_view(), name="ticket_board_move"),
 ]

@@ -1,0 +1,18 @@
+<div class="kanban-card bg-white rounded-lg shadow-sm p-3 border-l-4 {{ t.priority.border_classes }} {% if t.movable %}cursor-grab{% else %}no-drag{% endif %}"
+     data-id="{{ t.pk }}" data-move-url="{% url 'ticket_board_move' t.pk %}">
+  <div class="flex justify-between items-start gap-2">
+    <a href="{{ t.get_absolute_url }}" class="text-xs font-mono text-blue-700 hover:underline">{{ t.code }}</a>
+    <span class="px-1.5 py-0.5 rounded text-[10px] font-medium {{ t.priority.badge_classes }}">{{ t.priority.name }}</span>
+  </div>
+  <p class="text-sm font-medium mt-1">{{ t.title|truncatechars:55 }}</p>
+  <p class="text-xs text-slate-500 mt-1">{{ t.requester.display_name }} · {{ t.category.name }}</p>
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+    {% include "sla/partials/chip.html" with sla=t.sla %}
+    {% if t.assigned_to %}
+      <span title="{{ t.assigned_to.display_name }}"
+            class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-700 text-white text-[10px]">
+        {{ t.assigned_to.display_name|slice:":2"|upper }}
+      </span>
+    {% endif %}
+  </div>
+</div>

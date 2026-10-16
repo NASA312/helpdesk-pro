@@ -99,6 +99,12 @@
 
   <!-- Columna lateral -->
   <div class="space-y-6">
+        {% if user.is_support_staff or ticket.is_open %}
+    <div id="sla-panel" class="bg-white rounded-xl shadow-sm p-6"
+         hx-get="{% url 'ticket_sla' ticket.pk %}" hx-trigger="every 60s" hx-swap="innerHTML">
+      {% include "sla/partials/panel.html" %}
+    </div>
+    {% endif %}
 
     <div class="bg-white rounded-xl shadow-sm p-6">
       <dl class="space-y-3 text-sm">

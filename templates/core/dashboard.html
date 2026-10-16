@@ -8,7 +8,7 @@
 </p>
 
 <!-- Tickets -->
-<div class="grid sm:grid-cols-3 gap-4">
+<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
   {% if user.is_support_staff %}
     <a href="{% url 'ticket_list' %}?status=new&assigned=none" class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">
       <p class="text-sm text-slate-500">Sin asignar</p>
@@ -17,6 +17,10 @@
     <a href="{% url 'ticket_list' %}?assigned=me&status=open" class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">
       <p class="text-sm text-slate-500">Asignados a mí</p>
       <p class="text-3xl font-bold">{{ tickets_mine }}</p>
+    </a>
+    <a href="{% url 'ticket_list' %}?sla=breached" class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">
+      <p class="text-sm text-slate-500">SLA incumplido</p>
+      <p class="text-3xl font-bold {% if tickets_breached %}text-red-600{% endif %}">{{ tickets_breached }}</p>
     </a>
   {% else %}
     <a href="{% url 'ticket_list' %}?status=waiting_user" class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">

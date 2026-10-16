@@ -1,25 +1,36 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch, Q
-from django.http import FileResponse, Http404, HttpResponseRedirect
-from django.shortcuts import get_object_or_404, redirect
+from django.http import FileResponse, Http404, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.functional import cached_property
 from django.views import View
-from django.views.generic import DeleteView, DetailView, FormView, ListView
+from django.views.generic import DeleteView, DetailView, FormView, ListView, TemplateView
 
 from apps.accounts.models import Department
 from apps.catalog.models import Category, Priority
-from apps.core.mixins import AdminRequiredMixin, FormPageMixin
+from apps.core.mixins import AdminRequiredMixin, FormPageMixin, SupportStaffRequiredMixin
+from apps.sla.services import evaluate, get_calendar
 
+from .filters import apply_filters
 from .forms import AssignForm, CommentForm, StatusForm, TicketCreateForm, TicketStaffForm
 from .models import Ticket, TicketAttachment
-from .services import TicketError, add_comment, assign, change_status, create_ticket, take, update_details
+from .services import (
+    NoteRequired, TicketError, add_comment, assign, board_move, change_status,
+    create_ticket, take, update_details,
+)
 
 User = get_user_model()
 RELATED = ("category", "priority", "requester", "department", "asset", "assigned_to")
+BOARD_RELATED = ("category", "priority", "requester", "assigned_to", "asset")
+BOARD_CLOSED_DAYS = 7
 
 
 def get_ticket(user, pk):
@@ -42,45 +53,23 @@ class TicketListView(LoginRequiredMixin, ListView):
         qs = Ticket.objects.for_user(self.request.user).select_related(
             "category", "priority", "requester", "assigned_to", "asset"
         )
-        p = self.request.GET
-        q = p.get("q", "").strip()
-        if q:
-            cond = (
-                Q(title__icontains=q) | Q(requester__first_name__icontains=q)
-                | Q(requester__last_name__icontains=q) | Q(asset__code__icontains=q)
-            )
-            digits = q.upper().removeprefix("TK-").strip()
-            if digits.isdigit() and len(digits) <= 9:           # TK-000184 o 184
-                cond |= Q(number=int(digits))
-            qs = qs.filter(cond)
-
-        status = p.get("status", "")
-        if status == "open":
-            qs = qs.active()
-        elif status in Ticket.Status.values:
-            qs = qs.filter(status=status)
-        if p.get("priority", "").isdigit():
-            qs = qs.filter(priority_id=int(p["priority"]))
-        if p.get("category", "").isdigit():
-            qs = qs.filter(category_id=int(p["category"]))
-        if p.get("department", "").isdigit():
-            qs = qs.filter(department_id=int(p["department"]))
-        assigned = p.get("assigned", "")
-        if assigned == "me":
-            qs = qs.filter(assigned_to=self.request.user)
-        elif assigned == "none":
-            qs = qs.filter(assigned_to__isnull=True)
-        elif assigned.isdigit():
-            qs = qs.filter(assigned_to_id=int(assigned))
-        return qs
+        return apply_filters(qs, self.request.GET, self.request.user)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        get = self.request.GET
+        user, get = self.request.user, self.request.GET
         params = get.copy()
         params.pop("page", None)
+
+        tickets = list(ctx["tickets"])
+        if user.is_support_staff:
+            cal, now = get_calendar(), timezone.now()
+            for t in tickets:
+                t.sla = evaluate(t, cal, now)
+        ctx["tickets"] = tickets
+
         ctx.update(
-            filters={k: get.get(k, "") for k in ("q", "status", "priority", "category", "assigned", "department")},
+            filters={k: get.get(k, "") for k in ("q", "status", "priority", "category", "assigned", "department", "sla")},
             statuses=[("open", "Abiertos (sin resolver)")] + list(Ticket.Status.choices),
             priorities=Priority.objects.all(),
             categories=Category.objects.all(),
@@ -89,7 +78,6 @@ class TicketListView(LoginRequiredMixin, ListView):
             extra=("&" + params.urlencode()) if params else "",
         )
         return ctx
-
 
 # ---------------- Crear ----------------
 
@@ -147,6 +135,7 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
             assign_form=AssignForm(ticket=t) if t.user_can_assign(user) else None,
             status_form=StatusForm(ticket=t, user=user) if t.allowed_transitions(user) else None,
             comment_form=CommentForm(can_internal=see_internal) if t.user_can_comment(user) else None,
+            sla=evaluate(t),
         )
         return ctx
 
@@ -299,3 +288,66 @@ class TicketAttachmentView(LoginRequiredMixin, View):
         except FileNotFoundError:
             raise Http404("El archivo ya no está disponible.")
         return FileResponse(handle, as_attachment=True, filename=attachment.filename)
+    
+# ---------------- SLA y tablero ----------------
+
+class TicketSLAView(LoginRequiredMixin, View):
+    """Fragmento HTMX con el reloj del SLA (la página lo consulta cada 60 s)."""
+
+    def get(self, request, pk):
+        ticket = get_ticket(request.user, pk)
+        return render(request, "sla/partials/panel.html", {"ticket": ticket, "sla": evaluate(ticket)})
+
+
+class TicketBoardView(SupportStaffRequiredMixin, TemplateView):
+    template_name = "tickets/board.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        user, get = self.request.user, self.request.GET
+        cutoff = timezone.now() - timedelta(days=BOARD_CLOSED_DAYS)
+
+        qs = (
+            Ticket.objects.for_user(user).select_related(*BOARD_RELATED)
+            .exclude(status=Ticket.Status.CLOSED, closed_at__lt=cutoff)      # cerrados: solo la última semana
+            .order_by("-priority__level", "created_at")
+        )
+        qs = apply_filters(qs, get, user, include_status=False)
+
+        cal, now = get_calendar(), timezone.now()
+        columns = {value: [] for value in Ticket.Status.values}
+        for t in qs:
+            t.sla = evaluate(t, cal, now)
+            t.movable = t.user_can_work(user) or t.user_can_take(user)
+            columns[t.status].append(t)
+
+        filters = {k: get.get(k, "") for k in ("q", "assigned", "priority", "category")}
+        ctx.update(
+            columns=[(value, label, columns[value]) for value, label in Ticket.Status.choices],
+            filters=filters,
+            has_filters=any(filters.values()),
+            priorities=Priority.objects.all(),
+            categories=Category.objects.all(),
+            staff_members=User.objects.filter(is_active=True, role__in=[User.Role.ADMIN, User.Role.TECH]),
+            closed_days=BOARD_CLOSED_DAYS,
+        )
+        return ctx
+
+
+class TicketBoardMoveView(SupportStaffRequiredMixin, View):
+    """Lo llama el arrastrar y soltar. Responde JSON con la tarjeta ya actualizada."""
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        ticket = get_ticket(request.user, pk)                 # 404 si no puede verlo
+        try:
+            board_move(ticket, request.user, request.POST.get("status", ""), request.POST.get("note", ""))
+        except NoteRequired as exc:
+            return JsonResponse({"needs_note": True, "message": exc.message}, status=422)
+        except TicketError as exc:
+            return JsonResponse({"error": exc.message}, status=409)
+
+        t = Ticket.objects.select_related(*BOARD_RELATED).get(pk=ticket.pk)
+        t.sla = evaluate(t)
+        t.movable = t.user_can_work(request.user) or t.user_can_take(request.user)
+        return JsonResponse({"ok": True, "html": render_to_string("tickets/partials/board_card.html", {"t": t})})

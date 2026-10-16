@@ -3,7 +3,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.db import models, transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.urls import reverse
 from django.utils import timezone
 
@@ -51,6 +51,17 @@ class TicketQuerySet(models.QuerySet):
     def active(self):
         """Tickets sin resolver."""
         return self.exclude(status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED])
+    
+    def sla_breached(self):
+        """Tickets sin resolver cuyo plazo ya venció y cuyo reloj no está en pausa."""
+        now = timezone.now()
+        return self.active().filter(
+            Q(first_response_at__isnull=True, response_due_at__lt=now)
+            | (
+                Q(resolution_due_at__lt=now)
+                & (Q(sla_paused_at__isnull=True) | Q(sla_paused_at__gt=F("resolution_due_at")))
+            )
+        )
 
     def for_user(self, user):
         """Tickets que `user` puede ver."""
@@ -109,6 +120,11 @@ class Ticket(models.Model):
     first_response_at = models.DateTimeField(null=True, blank=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    # Plazos del SLA (los calcula apps.sla.services)
+    response_due_at = models.DateTimeField(null=True, blank=True)
+    resolution_due_at = models.DateTimeField(null=True, blank=True)
+    sla_paused_at = models.DateTimeField(null=True, blank=True)
+    sla_paused_seconds = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -124,6 +140,7 @@ class Ticket(models.Model):
             models.Index(fields=["status"]),
             models.Index(fields=["requester", "status"]),
             models.Index(fields=["assigned_to", "status"]),
+            models.Index(fields=["resolution_due_at"]),
         ]
 
     def __str__(self):

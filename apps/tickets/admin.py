@@ -23,7 +23,7 @@ class TicketAdmin(admin.ModelAdmin):
     list_display = ("code", "title", "status", "priority", "requester", "assigned_to", "created_at", "deleted_at")
     list_filter = ("status", "priority", "category")
     search_fields = ("title", "requester__username", "requester__email")
-    readonly_fields = ("number",)
+    readonly_fields = ("number", "response_due_at", "resolution_due_at", "sla_paused_at", "sla_paused_seconds")
     inlines = [CommentInline, EventInline]
 
     def has_add_permission(self, request):

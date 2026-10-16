@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "apps.catalog",       
     "apps.assets",  
     "apps.tickets",
+    "apps.sla",
 ]
 
 MIDDLEWARE = [
